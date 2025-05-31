@@ -6,7 +6,9 @@ import {
   deleteUser,
   authenticateUser,
   type User,
+  type PublicUser,
   type Result,
+  type AuthResult,
   updatePassword,
 } from "./users";
 
@@ -23,14 +25,13 @@ app.post("/login", async (req: Request, res: Response) => {
     return;
   }
 
-  const authenticated = await authenticateUser(email, password);
-  const user: User | undefined = await getUser(email);
+  const result: AuthResult = await authenticateUser(email, password);
 
-  if (authenticated.success && user) {
+  if (result.success) {
     res.status(201).json({
       success: true,
       message: "Login successful",
-      username: user.name,
+      username: result.name,
     });
   } else {
     res
@@ -108,7 +109,8 @@ app.get("/users", async (req: Request, res: Response) => {
 app.get("/users/:email", async (req: Request, res: Response) => {
   const user: User | undefined = await getUser(req.params.email);
   if (user) {
-    res.json({ success: true, user });
+    const publicUser: PublicUser = { name: user.name, email: user.email };
+    res.json({ success: true, user: publicUser });
   } else {
     res.status(404).json({ success: false, error: "User not found" });
   }

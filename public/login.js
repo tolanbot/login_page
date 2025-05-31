@@ -2,7 +2,6 @@ window.addEventListener("DOMContentLoaded", updateUI);
 
 let loggedInEmail = null;
 let passwordUpdated = null;
-console.log(`loggedInEmail: ${loggedInEmail}`);
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("email").value;
@@ -19,7 +18,6 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     const result = await res.json();
     if (result.success) {
       loggedInEmail = email;
-      console.log(`loggedInEmail: ${loggedInEmail}`);
       loginMessage.textContent = loginMessage.textContent = result.message;
       loginMessage.style.color = "lightgreen";
       loginMessage.classList.remove("hidden");
@@ -75,7 +73,6 @@ document
       "changePasswordMessage"
     );
     try {
-      console.log(`loggedInEmail: ${loggedInEmail}`);
       const res = await fetch(`users/${loggedInEmail}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
