@@ -41,7 +41,7 @@ document.getElementById("createForm").addEventListener("submit", async (e) => {
   const name = document.getElementById("createName").value;
   const email = document.getElementById("createEmail").value;
   const password = document.getElementById("createPassword").value;
-  const msg = document.getElementById("createMessage");
+  const createMessage = document.getElementById("createMessage");
 
   const res = await fetch("users", {
     method: "POST",
@@ -50,9 +50,9 @@ document.getElementById("createForm").addEventListener("submit", async (e) => {
   });
 
   const result = await res.json();
-  msg.textContent = result.user ? "Account created!" : result.error;
-  msg.style.color = result.success ? "lightgreen" : "red";
-  msg.classList.remove("hidden");
+  createMessage.textContent = result.success ? "Account created!" : result.error;
+  createMessage.style.color = result.success ? "lightgreen" : "red";
+  createMessage.classList.remove("hidden");
   if (result.success) {
     document.getElementById("createForm").reset();
   }
@@ -126,7 +126,6 @@ function updateUI() {
     hide(createForm);
     hide(createMessage);
     createMessage.textContent = "";
-
     show(logoutBtn);
     show(welcome);
     show(changePasswordBtn);
@@ -148,5 +147,6 @@ function updateUI() {
     hide(welcome);
     welcome.textContent = "";
     hide(changePasswordBtn);
+    show(createMessage)
   }
 }

@@ -1,4 +1,5 @@
 import { pool } from "./db";
+import bcrypt from "bcrypt";
 
 export type User = {
   id: number;
@@ -28,9 +29,10 @@ export async function createUser(
   password: string
 ): Promise<Result> {
   try {
+    const hashedPassword = await bcrypt.hash(password, 10);
     const result = await pool.query(
       `INSERT INTO users (name,email,password) VALUES ($1, $2, $3)`,
-      [name, email, password]
+      [name, email, hashedPassword]
     );
     if (result.rowCount && result.rowCount > 0) {
       return { success: true };
@@ -83,10 +85,11 @@ export async function authenticateUser(
     if (result.rows.length === 0) {
       return { success: false, error: "User not found" };
     }
-    const storedPassword = result.rows[0].password;
+    const storedHash = result.rows[0].password;
+    const isMatch = await bcrypt.compare(password, storedHash);
     const name = result.rows[0].name;
 
-    if (storedPassword === password) {
+    if (isMatch) {
       return { success: true, name };
     } else {
       return { success: false, error: "Incorrect password entered" };

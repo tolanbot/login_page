@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+import bcrypt from "bcrypt";
 import {
   createUser,
   getAllUsers,
@@ -76,24 +77,26 @@ app.patch("/users/:email", async (req: Request, res: Response) => {
   const user: User | undefined = await getUser(email);
 
   if (!user) {
-    res.status(404).json({ success: false, error: "User not found in patch." });
+    res.status(404).json({ success: false, error: "User not found" });
     return;
   }
-  if (!(oldPassword === user.password)) {
+  const oldPassswordMatches = await bcrypt.compare(oldPassword, user.password);
+  if (!oldPassswordMatches) {
     res.status(200).json({
       success: false,
       error: "Entered Old password does not mach old password",
     });
     return;
   }
-  if (!(newPassword === confirmPassword)) {
+  if (newPassword !== confirmPassword) {
     res.status(200).json({
       success: false,
       error: "new password and confirm password does not match",
     });
     return;
   }
-  const updated: Result = await updatePassword(email, newPassword);
+  const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+  const updated: Result = await updatePassword(email, hashedNewPassword);
   if (updated.success) {
     res.json({ success: true, message: "Password successfully updated" });
   } else {
