@@ -47,11 +47,7 @@ app.post("/users", async (req: Request, res: Response) => {
       .json({ success: false, error: "Missing name, email, or password." });
     return;
   }
-  const newUserResult: Result = await createUser(
-    name,
-    email,
-    password
-  );
+  const newUserResult: Result = await createUser(name, email, password);
   if (newUserResult.success === true) {
     res.status(201).json({ success: true });
   } else {

@@ -20,8 +20,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     if (result.success) {
       loggedInEmail = email;
       console.log(`loggedInEmail: ${loggedInEmail}`);
-      loginMessage.textContent = 
-      loginMessage.textContent = result.message;
+      loginMessage.textContent = loginMessage.textContent = result.message;
       loginMessage.style.color = "lightgreen";
       loginMessage.classList.remove("hidden");
       welcome.textContent = `Welcome back, ${result.username}!`;
@@ -113,7 +112,7 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
 function updateUI() {
   const show = (el) => el.classList.remove("hidden");
   const hide = (el) => el.classList.add("hidden");
-  
+
   const welcome = document.getElementById("welcome");
   const loginForm = document.getElementById("loginForm");
   const logoutBtn = document.getElementById("logoutBtn");
@@ -121,8 +120,10 @@ function updateUI() {
   const createMessage = document.getElementById("createMessage");
   const changePasswordBtn = document.getElementById("changePasswordBtn");
   const changePasswordForm = document.getElementById("changePasswordForm");
-  const changePasswordMessage = document.getElementById("changePasswordMessage")
-  const loginMessage = document.getElementById("loginMessage")
+  const changePasswordMessage = document.getElementById(
+    "changePasswordMessage"
+  );
+  const loginMessage = document.getElementById("loginMessage");
   if (loggedInEmail) {
     hide(loginForm);
     hide(createForm);
