@@ -1,0 +1,19 @@
+body {
+  font-family: sans-serif;
+  padding: 2rem;
+  background-color: azure;
+}
+h2 {
+  margin-top: 2rem;
+}
+.hidden {
+  display: none;
+}
+form > input {
+  margin: 0.25rem;
+}
+.message {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-weight: bold;
+}
