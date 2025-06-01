@@ -145,8 +145,7 @@ app.patch("/users/:email", patchLimiter, async (req: Request, res: Response) => 
     return;
   }
 
-  const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-  const updated: Result = await updatePassword(email, hashedNewPassword);
+  const updated: Result = await updatePassword(email, newPassword);
   if (updated.success) {
     res.json({ success: true, message: "Password successfully updated" });
   } else {

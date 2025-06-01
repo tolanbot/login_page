@@ -122,9 +122,10 @@ export async function updatePassword(
   newPassword: string
 ): Promise<Result> {
   try {
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
     const result = await pool.query(
       "UPDATE users SET password = $1 where email = $2",
-      [newPassword, email]
+      [hashedNewPassword, email]
     );
     if (result.rowCount && result.rowCount > 0) {
       return { success: true };
