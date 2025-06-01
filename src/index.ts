@@ -7,13 +7,11 @@ import {
   getUser,
   deleteUser,
   authenticateUser,
-  type User,
-  type PublicUser,
-  type Result,
-  type AuthResult,
   updatePassword,
   verifyPassword,
 } from "./users";
+
+import type { User, PublicUser, Result, AuthResult } from "./users";
 
 const app = express();
 app.use(express.json());
@@ -22,7 +20,10 @@ app.use(express.static("public"));
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  message: { success: false, error: "Too many login attempts, please try later" }
+  message: {
+    success: false,
+    error: "Too many login attempts, please try later",
+  },
 });
 
 app.post("/login", loginLimiter, async (req: Request, res: Response) => {
@@ -99,59 +100,65 @@ const patchLimiter = rateLimit({
   message: "Too many password change attempts. Try again later.",
 });
 
-app.patch("/users/:email", patchLimiter, async (req: Request, res: Response) => {
-  const email = req.params.email;
-  const { oldPassword, newPassword, confirmPassword } = req.body;
-  if (!oldPassword || !newPassword || !confirmPassword) {
-    res
-      .status(400)
-      .json({ success: false, error: "Missing password information" });
-    return;
-  }
+app.patch(
+  "/users/:email",
+  patchLimiter,
+  async (req: Request, res: Response) => {
+    const email = req.params.email;
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      res
+        .status(400)
+        .json({ success: false, error: "Missing password information" });
+      return;
+    }
 
-  if (newPassword === oldPassword) {
-    res.status(200).json({
-      success: false,
-      error: "New password must be different than old password",
-    });
-    return;
-  }
+    if (newPassword === oldPassword) {
+      res.status(200).json({
+        success: false,
+        error: "New password must be different than old password",
+      });
+      return;
+    }
 
-  const oldPasswordMatches = await verifyPassword(email, oldPassword);
-  if (!oldPasswordMatches) {
-    res.status(200).json({
-      success: false,
-      error: "Entered Old password does not mach old password",
-    });
-    return;
-  }
-  if (newPassword !== confirmPassword) {
-    res.status(200).json({
-      success: false,
-      error: "new password and confirm password does not match",
-    });
-    return;
-  }
+    const oldPasswordMatches = await verifyPassword(email, oldPassword);
+    if (!oldPasswordMatches) {
+      res.status(200).json({
+        success: false,
+        error: "Entered Old password does not mach old password",
+      });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      res.status(200).json({
+        success: false,
+        error: "new password and confirm password does not match",
+      });
+      return;
+    }
 
-  const isStrongPassword =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/.test(newPassword);
+    const isStrongPassword =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/.test(
+        newPassword
+      );
 
-  if (!isStrongPassword) {
-    res.status(400).json({
-      success: false,
-      error:
-        "Password must be at least 8 characters and include lowercase, uppercase, number, and special character.",
-    });
-    return;
-  }
+    if (!isStrongPassword) {
+      res.status(400).json({
+        success: false,
+        error:
+          "Password must be at least 8 characters and include lowercase, uppercase, number, and special character.",
+      });
+      return;
+    }
 
-  const updated: Result = await updatePassword(email, newPassword);
-  if (updated.success) {
-    res.json({ success: true, message: "Password successfully updated" });
-  } else {
-    res.status(500).json({ success: false, error: updated.error });
+    const updated: Result = await updatePassword(email, newPassword);
+    if (updated.success) {
+      res.json({ success: true, message: "Password successfully updated" });
+    } else {
+      res.status(500).json({ success: false, error: updated.error });
+    }
   }
-});
+);
 
 app.get("/users", async (req: Request, res: Response) => {
   const allUsers = await getAllUsers();
