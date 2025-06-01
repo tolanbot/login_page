@@ -60,6 +60,7 @@ document.getElementById("createForm").addEventListener("submit", async (e) => {
 
 document.getElementById("changePasswordBtn").addEventListener("click", () => {
   document.getElementById("changePasswordBox").classList.remove("hidden");
+  document.getElementById("changePasswordForm").classList.remove("hidden")
 });
 
 document

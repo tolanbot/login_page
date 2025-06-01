@@ -11,7 +11,9 @@ import {
   type Result,
   type AuthResult,
   updatePassword,
+  verifyPassword,
 } from "./users";
+import { Verify } from "crypto";
 
 const app = express();
 app.use(express.json());
@@ -74,14 +76,9 @@ app.patch("/users/:email", async (req: Request, res: Response) => {
     });
     return;
   }
-  const user: User | undefined = await getUser(email);
 
-  if (!user) {
-    res.status(404).json({ success: false, error: "User not found" });
-    return;
-  }
-  const oldPassswordMatches = await bcrypt.compare(oldPassword, user.password);
-  if (!oldPassswordMatches) {
+  const oldPasswordMatches = await verifyPassword(email, oldPassword);
+  if (!oldPasswordMatches) {
     res.status(200).json({
       success: false,
       error: "Entered Old password does not mach old password",

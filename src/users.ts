@@ -99,6 +99,24 @@ export async function authenticateUser(
   }
 }
 
+export async function verifyPassword(
+  email: string,
+  inputPassword: string
+): Promise<boolean> {
+  try {
+    const result = await pool.query(
+      `SELECT name, password FROM users WHERE email = $1`,
+      [email]
+    );
+    if (result.rows.length === 0) {
+      return false;
+    }
+    return await bcrypt.compare(inputPassword, result.rows[0].password);
+  } catch (err) {
+    return false;
+  }
+}
+
 export async function updatePassword(
   email: string,
   newPassword: string
