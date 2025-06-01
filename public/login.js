@@ -38,10 +38,33 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 
 document.getElementById("createForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const name = document.getElementById("createName").value;
-  const email = document.getElementById("createEmail").value;
-  const password = document.getElementById("createPassword").value;
   const createMessage = document.getElementById("createMessage");
+  const name = document.getElementById("createName").value.trim();
+  const nameIsValid = /^[a-zA_Z0-9]+$/.test(name);
+  if (!nameIsValid) {
+    createMessage.textContent = "Name must be alphanumeric only.";
+    createMessage.style.color = "red";
+    createMessage.classList.remove("hidden");
+    return;
+  }
+  const email = document.getElementById("createEmail").value;
+  const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (!emailIsValid) {
+    createMessage.textContent = "Email formatted incorectly.";
+    createMessage.style.color = "red";
+    createMessage.classList.remove("hidden");
+    return;
+  }
+  const password = document.getElementById("createPassword").value;
+  const isStrongPassword =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/.test(password);
+  if (!isStrongPassword) {
+    createMessage.textContent =
+      "Strong password must be at least 8 characters and contain: one lowercase letter, one uppercase letter, one digit, one special character.";
+    createMessage.style.color = "red";
+    createMessage.classList.remove("hidden");
+    return;
+  }
 
   const res = await fetch("users", {
     method: "POST",
@@ -50,7 +73,9 @@ document.getElementById("createForm").addEventListener("submit", async (e) => {
   });
 
   const result = await res.json();
-  createMessage.textContent = result.success ? "Account created!" : result.error;
+  createMessage.textContent = result.success
+    ? "Account created!"
+    : result.error;
   createMessage.style.color = result.success ? "lightgreen" : "red";
   createMessage.classList.remove("hidden");
   if (result.success) {
@@ -60,7 +85,7 @@ document.getElementById("createForm").addEventListener("submit", async (e) => {
 
 document.getElementById("changePasswordBtn").addEventListener("click", () => {
   document.getElementById("changePasswordBox").classList.remove("hidden");
-  document.getElementById("changePasswordForm").classList.remove("hidden")
+  document.getElementById("changePasswordForm").classList.remove("hidden");
 });
 
 document
@@ -73,6 +98,25 @@ document
     const changePasswordMessage = document.getElementById(
       "changePasswordMessage"
     );
+
+    const strongPasswordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
+
+    if (!strongPasswordRegex.test(newPassword)) {
+      changePasswordMessage.textContent =
+        "Password must be at least 8 characters, include uppercase, lowercase, number, and special character.";
+      changePasswordMessage.style.color = "red";
+      changePasswordMessage.classList.remove("hidden");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      changePasswordMessage.textContent =
+        "New password and confirm password do not match.";
+      changePasswordMessage.style.color = "red";
+      changePasswordMessage.classList.remove("hidden");
+      return;
+    }
     try {
       const res = await fetch(`users/${loggedInEmail}`, {
         method: "PATCH",
@@ -148,6 +192,6 @@ function updateUI() {
     hide(welcome);
     welcome.textContent = "";
     hide(changePasswordBtn);
-    show(createMessage)
+    show(createMessage);
   }
 }

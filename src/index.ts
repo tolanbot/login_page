@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+import rateLimit from "express-rate-limit";
 import bcrypt from "bcrypt";
 import {
   createUser,
@@ -13,13 +14,18 @@ import {
   updatePassword,
   verifyPassword,
 } from "./users";
-import { Verify } from "crypto";
 
 const app = express();
 app.use(express.json());
 app.use(express.static("public"));
 
-app.post("/login", async (req: Request, res: Response) => {
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { success: false, error: "Too many login attempts, please try later" }
+});
+
+app.post("/login", loginLimiter, async (req: Request, res: Response) => {
   const { email, password } = req.body;
   if (!email || !password) {
     res
@@ -51,7 +57,35 @@ app.post("/users", async (req: Request, res: Response) => {
       .json({ success: false, error: "Missing name, email, or password." });
     return;
   }
-  const newUserResult: Result = await createUser(name, email, password);
+  const cleanName = name.trim();
+  if (!/^[a-zA-Z0-9]+$/.test(cleanName)) {
+    res.status(400).json({ success: false, error: "Invalid name format" });
+    return;
+  }
+  const cleanEmail = email.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    res
+      .status(400)
+      .json({ success: false, error: "Email has incorrect formatting." });
+    return;
+  }
+  const cleanPassword = password.trim();
+  if (
+    !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/.test(password)
+  ) {
+    res.status(400).json({
+      success: false,
+      error:
+        "Strong password must be at least 8 characters and contain: one lowercase letter, one uppercase letter, one digit, one special character.",
+    });
+    return;
+  }
+
+  const newUserResult: Result = await createUser(
+    cleanName,
+    cleanEmail,
+    cleanPassword
+  );
   if (newUserResult.success === true) {
     res.status(201).json({ success: true });
   } else {
@@ -59,7 +93,13 @@ app.post("/users", async (req: Request, res: Response) => {
   }
 });
 
-app.patch("/users/:email", async (req: Request, res: Response) => {
+const patchLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 5, // limit each IP to 5 attempts
+  message: "Too many password change attempts. Try again later.",
+});
+
+app.patch("/users/:email", patchLimiter, async (req: Request, res: Response) => {
   const email = req.params.email;
   const { oldPassword, newPassword, confirmPassword } = req.body;
   if (!oldPassword || !newPassword || !confirmPassword) {
@@ -92,6 +132,19 @@ app.patch("/users/:email", async (req: Request, res: Response) => {
     });
     return;
   }
+
+  const isStrongPassword =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/.test(newPassword);
+
+  if (!isStrongPassword) {
+    res.status(400).json({
+      success: false,
+      error:
+        "Password must be at least 8 characters and include lowercase, uppercase, number, and special character.",
+    });
+    return;
+  }
+
   const hashedNewPassword = await bcrypt.hash(newPassword, 10);
   const updated: Result = await updatePassword(email, hashedNewPassword);
   if (updated.success) {
