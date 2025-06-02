@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import rateLimit from "express-rate-limit";
-import bcrypt from "bcrypt";
+import { generateToken, verifyToken } from "./auth";
+import cookieParser from "cookie-parser";
 import {
   createUser,
   getAllUsers,
@@ -12,9 +13,11 @@ import {
 } from "./users";
 
 import type { User, PublicUser, Result, AuthResult } from "./users";
+import type { RequestHandler } from "express";
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.static("public"));
 
 const loginLimiter = rateLimit({
@@ -38,6 +41,14 @@ app.post("/login", loginLimiter, async (req: Request, res: Response) => {
   const result: AuthResult = await authenticateUser(email, password);
 
   if (result.success) {
+    const token = generateToken({ email, name: result.name });
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 1000,
+    });
+
     res.status(201).json({
       success: true,
       message: "Login successful",
@@ -50,6 +61,20 @@ app.post("/login", loginLimiter, async (req: Request, res: Response) => {
   }
 });
 
+app.post("/logout", (req: Request, res: Response) => {
+  const token = req.cookies.token;
+  if (!token || !verifyToken(token)) {
+    res.status(401).json({ success: false, error: "invalid or missing token" });
+    return;
+  }
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+  });
+  res.status(200).json({ success: true, message: "Logged out" });
+});
+
 app.post("/users", async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password) {
@@ -58,19 +83,19 @@ app.post("/users", async (req: Request, res: Response) => {
       .json({ success: false, error: "Missing name, email, or password." });
     return;
   }
-  const cleanName = name.trim();
+  const cleanName: string = name.trim();
   if (!/^[a-zA-Z0-9]+$/.test(cleanName)) {
     res.status(400).json({ success: false, error: "Invalid name format" });
     return;
   }
-  const cleanEmail = email.trim();
+  const cleanEmail: string = email.trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     res
       .status(400)
       .json({ success: false, error: "Email has incorrect formatting." });
     return;
   }
-  const cleanPassword = password.trim();
+  const cleanPassword: string = password.trim();
   if (
     !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/.test(password)
   ) {
@@ -102,8 +127,19 @@ const patchLimiter = rateLimit({
 
 app.patch(
   "/users/:email",
-  patchLimiter,
+  patchLimiter as RequestHandler,
   async (req: Request, res: Response) => {
+    const token = req.cookies.token;
+    if (!token) {
+      res.status(401).json({ success: false, error: "Unauthorized" });
+      return;
+    }
+    const user = verifyToken(token);
+    if (!user) {
+      res.status(403).json({ success: false, error: "Invalid Token" });
+      return;
+    }
+
     const email = req.params.email;
     const { oldPassword, newPassword, confirmPassword } = req.body;
     if (!oldPassword || !newPassword || !confirmPassword) {
@@ -159,6 +195,25 @@ app.patch(
     }
   }
 );
+
+app.get("/me", (req: Request, res: Response) => {
+  const token = req.cookies.token;
+  if (!token) {
+    res.json({ success: false, loggedIn: false });
+    return;
+  }
+  const user = verifyToken(token);
+  if (!user) {
+    res.json({ success: false, loggedIn: false });
+    return;
+  }
+  res.json({
+    success: true,
+    loggedIn: true,
+    name: user.name,
+    email: user.email,
+  });
+});
 
 app.get("/users", async (req: Request, res: Response) => {
   const allUsers = await getAllUsers();

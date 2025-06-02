@@ -1,7 +1,24 @@
-window.addEventListener("DOMContentLoaded", updateUI);
-
 let loggedInEmail = null;
 let passwordUpdated = null;
+
+window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const res = await fetch("/me", {
+      method: "GET",
+      credentials: "include",
+    });
+    const result = await res.json();
+    console.log(result);
+    if (result.success && result.loggedIn) {
+      loggedInEmail = result.email;
+      document.getElementById(
+        "welcome"
+      ).textContent = `Welcome back, ${result.name}!`;
+    }
+  } catch (err) {}
+  updateUI();
+});
+
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("email").value;
@@ -30,7 +47,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       loginMessage.classList.remove("hidden");
     }
   } catch (error) {
-    loginMessage.textContent = "An error occurred";
+    loginMessage.textContent = error.message;
     loginMessage.style.color = "red";
     loginMessage.classList.remove("hidden");
   }
@@ -141,14 +158,26 @@ document
     }
   });
 
-document.getElementById("logoutBtn").addEventListener("click", () => {
-  loggedInEmail = null;
-  document.getElementById("loginForm").reset();
-  const message = document.getElementById("loginMessage");
-  message.textContent = "Logged Out";
-  message.style.color = "gray";
-  message.classList.remove("hidden");
-  updateUI();
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  try {
+    const res = await fetch("/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    const result = await res.json();
+    console.log(result);
+    if (result.success) {
+      loggedInEmail = null;
+      document.getElementById("loginForm").reset();
+      const message = document.getElementById("loginMessage");
+      message.textContent = "Logged Out";
+      message.style.color = "gray";
+      message.classList.remove("hidden");
+      updateUI();
+    }
+  } catch (err) {
+    console.log("something went wrong in logout");
+  }
 });
 
 function updateUI() {
@@ -187,6 +216,7 @@ function updateUI() {
     show(loginForm);
     show(createForm);
     hide(logoutBtn);
+    hide(changePasswordForm);
     hide(changePasswordMessage);
     changePasswordMessage.textContent = "";
     hide(welcome);
